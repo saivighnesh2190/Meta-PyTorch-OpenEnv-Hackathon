@@ -15,6 +15,7 @@ from api.schemas import (
     StepResponse,
     TasksResponse,
 )
+from baseline.prompting import heuristic_decision
 from baseline.run_baseline import DEFAULT_MODEL, run_baseline, run_baseline_local
 from env import DeliveryWorkerAssignmentEnv
 from grader import grade_actions
@@ -52,6 +53,46 @@ app = FastAPI(
         "delivery orders to workers under distance, deadline, and capacity constraints."
     ),
 )
+
+
+def _run_heuristic_baseline_local() -> list[dict]:
+    results: list[dict] = []
+
+    for task in list_task_summaries():
+        env = DeliveryWorkerAssignmentEnv(task_id=task.id)
+        observation = env.reset(task_id=task.id)
+        actions: list[DeliveryAction] = []
+        done = False
+
+        while not done:
+            action = DeliveryAction.model_validate(heuristic_decision(observation).model_dump())
+            observation, _, done, info = env.step(action)
+            if not info["valid_action"]:
+                action = DeliveryAction(
+                    action_type="advance_time",
+                    order_id=None,
+                    worker_id=None,
+                )
+                observation, _, done, info = env.step(action)
+            actions.append(action)
+
+        grade = grade_actions(task.id, actions)
+        results.append(
+            {
+                "task_id": task.id,
+                "task_name": task.name,
+                "provider_used": "heuristic",
+                "providers_attempted": [],
+                "providers_succeeded": [],
+                "score": grade.score,
+                "delivered_orders": grade.delivered_orders,
+                "delivered_on_time": grade.delivered_on_time,
+                "total_distance_traveled": grade.total_distance_traveled,
+                "invalid_actions": grade.invalid_actions,
+            }
+        )
+
+    return results
 
 
 @app.get("/health")
@@ -100,10 +141,8 @@ def get_baseline_info(request: Request) -> BaselineRunResponse:
             results = run_baseline_local(model=DEFAULT_MODEL)
         except Exception:
             # Final fallback keeps the endpoint available even if model providers
-            # are unavailable inside the container runtime.
-            results = run_baseline_local(
-                model=DEFAULT_MODEL, use_model_providers=False
-            )
+            # or helper imports are unavailable inside the container runtime.
+            results = _run_heuristic_baseline_local()
     return BaselineRunResponse(
         entrypoint="baseline/run_baseline.py",
         command=f"python -m baseline.run_baseline --base-url {base_url}",
