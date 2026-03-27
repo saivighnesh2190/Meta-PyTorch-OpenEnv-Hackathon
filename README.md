@@ -1,3 +1,17 @@
+---
+title: Delivery Worker Assignment OpenEnv
+emoji: "🚚"
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+tags:
+  - openenv
+  - fastapi
+  - logistics
+---
+
 # Delivery Worker Assignment Environment
 
 Production-grade OpenEnv-style logistics environment for assigning delivery orders to workers under distance, deadline, and capacity constraints.
