@@ -127,7 +127,14 @@ def reset_environment(request: ResetRequest) -> DeliveryObservation:
 @app.post("/step", response_model=StepResponse)
 def step_environment(request: StepRequest) -> StepResponse:
     observation, reward, done, info = manager.step(request.action)
-    return StepResponse(observation=observation, reward=reward, done=done, info=info)
+    response_info = dict(info)
+    response_info["reward_breakdown"] = reward.model_dump()
+    return StepResponse(
+        observation=observation,
+        reward=reward.total,
+        done=done,
+        info=response_info,
+    )
 
 
 @app.get("/state", response_model=StateResponse)
@@ -145,7 +152,8 @@ def get_tasks() -> TasksResponse:
 
 @app.post("/grader", response_model=GraderResponse)
 def grade_submission(request: GraderRequest) -> GraderResponse:
-    return GraderResponse(result=grade_actions(request.task_id, request.actions))
+    result = grade_actions(request.task_id, request.actions)
+    return GraderResponse(score=result.score, result=result)
 
 
 @app.get("/baseline", response_model=BaselineRunResponse)

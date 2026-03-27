@@ -86,7 +86,7 @@ The reward is dense and additive:
 - fairness penalty when active queue load is too uneven
 - reassignment penalty to discourage churn
 
-Each step returns a structured `DeliveryReward` model with component fields and a normalized scalar total.
+Each step returns a scalar `reward` for compatibility, while `info.reward_breakdown` preserves the full `DeliveryReward` component model.
 
 ## Tasks
 
@@ -182,6 +182,21 @@ curl -X POST http://localhost:8000/step \
   }'
 ```
 
+The response shape is:
+
+```json
+{
+  "observation": { "...": "..." },
+  "reward": 0.2889,
+  "done": false,
+  "info": {
+    "reward_breakdown": {
+      "total": 0.2889
+    }
+  }
+}
+```
+
 ### Grader Example
 
 ```bash
@@ -194,6 +209,17 @@ curl -X POST http://localhost:8000/grader \
       {"action_type":"advance_time"}
     ]
   }'
+```
+
+The grader response includes a top-level scalar `score` and the detailed deterministic result payload:
+
+```json
+{
+  "score": 0.78,
+  "result": {
+    "score": 0.78
+  }
+}
 ```
 
 ## Project Structure

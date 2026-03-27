@@ -22,7 +22,7 @@ class StepResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     observation: DeliveryObservation
-    reward: DeliveryReward
+    reward: float
     done: bool
     info: dict
 
@@ -44,6 +44,7 @@ class GraderRequest(BaseModel):
 class GraderResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    score: float = Field(..., ge=0.0, le=1.0)
     result: GradeResult
 
 

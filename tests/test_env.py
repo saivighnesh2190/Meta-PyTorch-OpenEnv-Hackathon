@@ -46,3 +46,39 @@ def test_api_exposes_required_endpoints() -> None:
     assert tasks_response.status_code == 200
     assert "action_schema" in tasks_response.json()
     assert client.post("/reset", json={"task_id": "easy"}).status_code == 200
+
+
+def test_api_step_exposes_scalar_reward_and_grader_score() -> None:
+    client = TestClient(app)
+    client.post("/reset", json={"task_id": "easy"})
+
+    step_response = client.post(
+        "/step",
+        json={
+            "action": {
+                "action_type": "assign_order",
+                "order_id": "O-101",
+                "worker_id": "W-1",
+            }
+        },
+    )
+    assert step_response.status_code == 200
+    step_payload = step_response.json()
+    assert isinstance(step_payload["reward"], float)
+    assert "reward_breakdown" in step_payload["info"]
+    assert isinstance(step_payload["info"]["reward_breakdown"]["total"], float)
+
+    grader_response = client.post(
+        "/grader",
+        json={
+            "task_id": "easy",
+            "actions": [
+                {"action_type": "assign_order", "order_id": "O-101", "worker_id": "W-1"},
+                {"action_type": "advance_time"},
+            ],
+        },
+    )
+    assert grader_response.status_code == 200
+    grader_payload = grader_response.json()
+    assert isinstance(grader_payload["score"], float)
+    assert grader_payload["score"] == grader_payload["result"]["score"]
