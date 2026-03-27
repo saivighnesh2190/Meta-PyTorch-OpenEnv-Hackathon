@@ -95,6 +95,25 @@ def _run_heuristic_baseline_local() -> list[dict]:
     return results
 
 
+@app.get("/")
+def root() -> dict:
+    return {
+        "name": "Delivery Worker Assignment OpenEnv",
+        "status": "running",
+        "docs": "/docs",
+        "required_endpoints": [
+            "/tasks",
+            "/grader",
+            "/baseline",
+            "/reset",
+            "/step",
+            "/state",
+            "/schema",
+            "/health",
+        ],
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "healthy"}
