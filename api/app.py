@@ -15,7 +15,7 @@ from api.schemas import (
     StepResponse,
     TasksResponse,
 )
-from baseline.run_baseline import DEFAULT_MODEL, run_baseline
+from baseline.run_baseline import DEFAULT_MODEL, run_baseline, run_baseline_local
 from env import DeliveryWorkerAssignmentEnv
 from grader import grade_actions
 from models import DeliveryAction, DeliveryObservation, DeliveryReward, DeliveryState
@@ -91,13 +91,19 @@ def grade_submission(request: GraderRequest) -> GraderResponse:
 @app.get("/baseline", response_model=BaselineRunResponse)
 def get_baseline_info(request: Request) -> BaselineRunResponse:
     base_url = str(request.base_url).rstrip("/")
+    try:
+        results = run_baseline(base_url=base_url, model=DEFAULT_MODEL)
+    except Exception:
+        # Spaces can reject or deadlock self-HTTP calls in some runtime states.
+        # Fall back to the equivalent in-process runner so the endpoint stays available.
+        results = run_baseline_local(model=DEFAULT_MODEL)
     return BaselineRunResponse(
         entrypoint="baseline/run_baseline.py",
         command=f"python -m baseline.run_baseline --base-url {base_url}",
         default_model=DEFAULT_MODEL,
         required_env=["OPENAI_API_KEY"],
         fallback_env=["GEMINI_API_KEY"],
-        results=run_baseline(base_url=base_url, model=DEFAULT_MODEL),
+        results=results,
     )
 
 
