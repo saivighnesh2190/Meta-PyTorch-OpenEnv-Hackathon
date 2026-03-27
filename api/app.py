@@ -94,9 +94,16 @@ def get_baseline_info(request: Request) -> BaselineRunResponse:
     try:
         results = run_baseline(base_url=base_url, model=DEFAULT_MODEL)
     except Exception:
-        # Spaces can reject or deadlock self-HTTP calls in some runtime states.
-        # Fall back to the equivalent in-process runner so the endpoint stays available.
-        results = run_baseline_local(model=DEFAULT_MODEL)
+        try:
+            # Spaces can reject or deadlock self-HTTP calls in some runtime states.
+            # Fall back to the equivalent in-process runner first.
+            results = run_baseline_local(model=DEFAULT_MODEL)
+        except Exception:
+            # Final fallback keeps the endpoint available even if model providers
+            # are unavailable inside the container runtime.
+            results = run_baseline_local(
+                model=DEFAULT_MODEL, use_model_providers=False
+            )
     return BaselineRunResponse(
         entrypoint="baseline/run_baseline.py",
         command=f"python -m baseline.run_baseline --base-url {base_url}",

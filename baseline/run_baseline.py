@@ -234,7 +234,9 @@ def run_baseline(base_url: str, model: str = DEFAULT_MODEL) -> list[dict[str, An
     return runner.run()
 
 
-def run_baseline_local(model: str = DEFAULT_MODEL) -> list[dict[str, Any]]:
+def run_baseline_local(
+    model: str = DEFAULT_MODEL, use_model_providers: bool = True
+) -> list[dict[str, Any]]:
     runner = DeliveryBaselineRunner(base_url="http://localhost:8000", model=model)
     results: list[dict[str, Any]] = []
 
@@ -245,7 +247,11 @@ def run_baseline_local(model: str = DEFAULT_MODEL) -> list[dict[str, Any]]:
         done = False
 
         while not done:
-            decision = runner._model_decision(observation)
+            if use_model_providers:
+                decision = runner._model_decision(observation)
+            else:
+                runner._current_task_provider = "heuristic"
+                decision = heuristic_decision(observation)
             action = DeliveryAction.model_validate(decision.model_dump())
             observation, _, done, info = env.step(action)
             if not info["valid_action"]:
