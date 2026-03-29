@@ -120,8 +120,9 @@ def health() -> dict[str, str]:
 
 
 @app.post("/reset", response_model=DeliveryObservation)
-def reset_environment(request: ResetRequest) -> DeliveryObservation:
-    return manager.reset(request.task_id)
+def reset_environment(request: ResetRequest | None = None) -> DeliveryObservation:
+    task_id = request.task_id if request is not None else "easy"
+    return manager.reset(task_id)
 
 
 @app.post("/step", response_model=StepResponse)

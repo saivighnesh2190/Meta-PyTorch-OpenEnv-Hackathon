@@ -46,6 +46,7 @@ def test_api_exposes_required_endpoints() -> None:
     assert tasks_response.status_code == 200
     assert "action_schema" in tasks_response.json()
     assert client.post("/reset", json={"task_id": "easy"}).status_code == 200
+    assert client.post("/reset").status_code == 200
 
 
 def test_api_step_exposes_scalar_reward_and_grader_score() -> None:
