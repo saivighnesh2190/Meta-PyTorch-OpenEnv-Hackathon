@@ -12,16 +12,17 @@ from models import BaselineDecision, DeliveryAction, DeliveryObservation
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "openai/gpt-oss-120b")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", os.getenv("BASE_URL", "http://127.0.0.1:8000"))
 MAX_STEPS = int(os.getenv("MAX_STEPS", "64"))
 
 
 class InferenceRunner:
     def __init__(self) -> None:
-        if not API_KEY:
-            raise RuntimeError("HF_TOKEN or API_KEY must be set for inference.")
-        self.client = OpenAI(base_url=API_BASE_URL.rstrip("/"), api_key=API_KEY)
+        if not HF_TOKEN:
+            raise RuntimeError("HF_TOKEN must be set for inference.")
+        self.client = OpenAI(base_url=API_BASE_URL.rstrip("/"), api_key=HF_TOKEN)
         self.session = requests.Session()
         self.env_base_url = ENV_BASE_URL.rstrip("/")
         self.model_name = MODEL_NAME
@@ -151,15 +152,7 @@ class InferenceRunner:
 
 def main() -> None:
     runner = InferenceRunner()
-    results = runner.run()
-    for result in results:
-        print(
-            f"{result['task_name']} ({result['task_id']}) -> "
-            f"score={result['score']:.4f}, "
-            f"on_time={result['delivered_on_time']}/{result['delivered_orders']}, "
-            f"distance={result['total_distance_traveled']}, "
-            f"invalid_actions={result['invalid_actions']}"
-        )
+    runner.run()
 
 
 if __name__ == "__main__":
