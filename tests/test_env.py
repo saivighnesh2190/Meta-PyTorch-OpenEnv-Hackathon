@@ -36,7 +36,7 @@ def test_grader_returns_normalized_score() -> None:
         DeliveryAction(action_type=ActionType.ADVANCE_TIME),
     ]
     result = grade_actions("easy", actions)
-    assert 0.0 <= result.score <= 1.0
+    assert 0.0 < result.score < 1.0
     assert 0.0 <= result.breakdown.fairness_score <= 1.0
 
 

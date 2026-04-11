@@ -87,7 +87,7 @@ def grade_actions(task_id: str, actions: list[DeliveryAction]) -> GradeResult:
         - 0.10 * late_ratio
         - 0.05 * invalid_ratio
     )
-    score = round(max(0.0, min(1.0, raw_score)), 4)
+    score = round(max(0.0001, min(0.9999, raw_score)), 4)
 
     return GradeResult(
         task_id=task_id,
