@@ -95,8 +95,8 @@ def grade_actions(task_id: str, actions: list[DeliveryAction]) -> GradeResult:
         breakdown=GradeBreakdown(
             on_time_delivery_rate=round(on_time_rate, 4),
             completion_rate=round(completion_rate, 4),
-            efficiency_score=round(efficiency_score, 4),
-            fairness_score=round(fairness_score, 4),
+            efficiency_score=_strict_unit_score(efficiency_score),
+            fairness_score=_strict_unit_score(fairness_score),
             priority_service_rate=round(priority_service_rate, 4),
             late_delivery_ratio=round(late_ratio, 4),
             invalid_action_ratio=round(invalid_ratio, 4),
@@ -144,3 +144,8 @@ def _fairness_score(
         return 1.0
 
     return max(0.0, 1.0 - min(1.0, variance / max_variance))
+
+
+def _strict_unit_score(value: float) -> float:
+    """Return a validator-safe score strictly inside the open unit interval."""
+    return round(max(0.0001, min(0.9999, value)), 4)

@@ -187,7 +187,7 @@ def main() -> None:
     except Exception as exc:
         print(f"[START] task=error", flush=True)
         print(
-            f"[STEP] task=error step=1 reward=0.0000 error={type(exc).__name__}",
+            f"[STEP] task=error step=1 reward=0.0001 error={type(exc).__name__}",
             flush=True,
         )
         print(f"[END] task=error score=0.0001 steps=1", flush=True)
