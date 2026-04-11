@@ -14,7 +14,13 @@ API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "openai/gpt-oss-120b")
 HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-ENV_BASE_URL = os.getenv("ENV_BASE_URL", os.getenv("BASE_URL", "http://127.0.0.1:8000"))
+ENV_BASE_URL = os.getenv(
+    "ENV_BASE_URL",
+    os.getenv(
+        "BASE_URL",
+        "https://vighnesh2190-meta-pytorch-openenv-hackathon-v2.hf.space",
+    ),
+)
 MAX_STEPS = 64
 MODEL_TIMEOUT_SECONDS = 5.0
 
@@ -184,7 +190,7 @@ def main() -> None:
             f"[STEP] task=error step=1 reward=0.0000 error={type(exc).__name__}",
             flush=True,
         )
-        print(f"[END] task=error score=0.0000 steps=1", flush=True)
+        print(f"[END] task=error score=0.0001 steps=1", flush=True)
 
 
 if __name__ == "__main__":
