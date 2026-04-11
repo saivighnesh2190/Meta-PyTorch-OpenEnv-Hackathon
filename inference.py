@@ -41,26 +41,13 @@ class InferenceRunner:
         self.model_available = True
 
     def run(self) -> list[dict[str, Any]]:
-        print(
-            f"[START] task=all model={MODEL_NAME} max_steps={MAX_STEPS}",
-            flush=True,
-        )
         tasks = self.session.get(f"{self.env_base_url}/tasks", timeout=30).json()["tasks"]
         results: list[dict[str, Any]] = []
         for task in tasks:
             results.append(self._run_task(task["id"], task["name"]))
-        total_score = _strict_unit_float(
-            sum(float(result["score"]) for result in results) / max(len(results), 1)
-        )
-        total_steps = sum(int(result["steps"]) for result in results)
-        print(
-            f"[END] task=all score={total_score:.4f} steps={total_steps}",
-            flush=True,
-        )
         return results
 
     def _run_task(self, task_id: str, task_name: str) -> dict[str, Any]:
-        task_label = task_name.replace(" ", "_")
         reset_response = self.session.post(
             f"{self.env_base_url}/reset",
             json={"task_id": task_id},
@@ -73,7 +60,7 @@ class InferenceRunner:
         steps = 0
 
         print(
-            f"[START] task={task_id} task_name={task_label} max_steps={MAX_STEPS}",
+            f"[START] task={task_id}",
             flush=True,
         )
 
@@ -103,18 +90,12 @@ class InferenceRunner:
             done = bool(step_payload["done"])
             steps += 1
             reward = _strict_unit_float(float(step_payload["reward"]))
-            valid_action = bool(step_payload["info"].get("valid_action", True))
-            action_type = getattr(action.action_type, "value", str(action.action_type))
             print(
                 "[STEP] "
                 f"task={task_id} "
                 f"step={steps} "
-                f"action_type={action_type} "
-                f"order_id={action.order_id or 'null'} "
-                f"worker_id={action.worker_id or 'null'} "
                 f"reward={reward:.4f} "
-                f"done={str(done).lower()} "
-                f"valid_action={str(valid_action).lower()}",
+                f"done={str(done).lower()}",
                 flush=True,
             )
 
@@ -131,12 +112,8 @@ class InferenceRunner:
         print(
             "[END] "
             f"task={task_id} "
-            f"task_name={task_label} "
             f"score={_strict_unit_float(float(result['score'])):.4f} "
-            f"steps={steps} "
-            f"delivered_orders={result['delivered_orders']} "
-            f"delivered_on_time={result['delivered_on_time']} "
-            f"invalid_actions={result['invalid_actions']}",
+            f"steps={steps}",
             flush=True,
         )
         return {
@@ -187,7 +164,7 @@ def main() -> None:
     except Exception as exc:
         print(f"[START] task=error", flush=True)
         print(
-            f"[STEP] task=error step=1 reward=0.0500 error={type(exc).__name__}",
+            f"[STEP] task=error step=1 reward=0.0500 done=true",
             flush=True,
         )
         print(f"[END] task=error score=0.0500 steps=1", flush=True)

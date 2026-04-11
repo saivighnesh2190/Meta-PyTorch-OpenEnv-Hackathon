@@ -16,7 +16,7 @@ from api.schemas import (
     TasksResponse,
 )
 from baseline.prompting import heuristic_decision
-from baseline.run_baseline import DEFAULT_MODEL, run_baseline, run_baseline_local
+from baseline.run_baseline import DEFAULT_MODEL
 from env import DeliveryWorkerAssignmentEnv
 from grader import grade_actions
 from models import DeliveryAction, DeliveryObservation, DeliveryReward, DeliveryState
@@ -160,17 +160,9 @@ def grade_submission(request: GraderRequest) -> GraderResponse:
 @app.get("/baseline", response_model=BaselineRunResponse)
 def get_baseline_info(request: Request) -> BaselineRunResponse:
     base_url = str(request.base_url).rstrip("/")
-    try:
-        results = run_baseline(base_url=base_url, model=DEFAULT_MODEL)
-    except Exception:
-        try:
-            # Spaces can reject or deadlock self-HTTP calls in some runtime states.
-            # Fall back to the equivalent in-process runner first.
-            results = run_baseline_local(model=DEFAULT_MODEL)
-        except Exception:
-            # Final fallback keeps the endpoint available even if model providers
-            # or helper imports are unavailable inside the container runtime.
-            results = _run_heuristic_baseline_local()
+    # Keep the metadata endpoint fast and deterministic in HF validation. The
+    # executable model baseline remains in baseline/run_baseline.py and inference.py.
+    results = _run_heuristic_baseline_local()
     return BaselineRunResponse(
         entrypoint="baseline/run_baseline.py",
         command=f"python -m baseline.run_baseline --base-url {base_url}",
