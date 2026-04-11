@@ -187,14 +187,14 @@ def main() -> None:
     except Exception as exc:
         print(f"[START] task=error", flush=True)
         print(
-            f"[STEP] task=error step=1 reward=0.0001 error={type(exc).__name__}",
+            f"[STEP] task=error step=1 reward=0.0500 error={type(exc).__name__}",
             flush=True,
         )
-        print(f"[END] task=error score=0.0001 steps=1", flush=True)
+        print(f"[END] task=error score=0.0500 steps=1", flush=True)
 
 
 def _strict_unit_float(value: float) -> float:
-    return round(max(0.0001, min(0.9999, value)), 4)
+    return round(max(0.05, min(0.95, value)), 4)
 
 
 if __name__ == "__main__":

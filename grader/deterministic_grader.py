@@ -87,7 +87,7 @@ def grade_actions(task_id: str, actions: list[DeliveryAction]) -> GradeResult:
         - 0.10 * late_ratio
         - 0.05 * invalid_ratio
     )
-    score = round(max(0.0001, min(0.9999, raw_score)), 4)
+    score = _strict_unit_score(raw_score)
 
     return GradeResult(
         task_id=task_id,
@@ -148,4 +148,4 @@ def _fairness_score(
 
 def _strict_unit_score(value: float) -> float:
     """Return a validator-safe score strictly inside the open unit interval."""
-    return round(max(0.0001, min(0.9999, value)), 4)
+    return round(max(0.05, min(0.95, value)), 4)
