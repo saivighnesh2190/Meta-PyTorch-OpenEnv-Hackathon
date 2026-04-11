@@ -23,7 +23,7 @@ class GradeResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     task_id: str
-    score: float = Field(..., ge=0.0, le=1.0)
+    score: float = Field(..., gt=0.0, lt=1.0)
     breakdown: GradeBreakdown
     delivered_orders: int
     delivered_on_time: int

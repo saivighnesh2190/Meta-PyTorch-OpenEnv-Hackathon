@@ -44,7 +44,7 @@ class GraderRequest(BaseModel):
 class GraderResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    score: float = Field(..., ge=0.0, le=1.0)
+    score: float = Field(..., gt=0.0, lt=1.0)
     result: GradeResult
 
 
@@ -56,7 +56,7 @@ class BaselineTaskResult(BaseModel):
     provider_used: str
     providers_attempted: list[str]
     providers_succeeded: list[str]
-    score: float
+    score: float = Field(..., gt=0.0, lt=1.0)
     delivered_orders: int
     delivered_on_time: int
     total_distance_traveled: int
