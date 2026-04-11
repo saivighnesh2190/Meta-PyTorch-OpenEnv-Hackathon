@@ -15,23 +15,42 @@ MODEL_NAME = os.getenv("MODEL_NAME", "openai/gpt-oss-120b")
 HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", os.getenv("BASE_URL", "http://127.0.0.1:8000"))
-MAX_STEPS = int(os.getenv("MAX_STEPS", "64"))
+MAX_STEPS = 64
+MODEL_TIMEOUT_SECONDS = 5.0
 
 
 class InferenceRunner:
     def __init__(self) -> None:
         if not HF_TOKEN:
             raise RuntimeError("HF_TOKEN must be set for inference.")
-        self.client = OpenAI(base_url=API_BASE_URL.rstrip("/"), api_key=HF_TOKEN)
+        self.client = OpenAI(
+            base_url=API_BASE_URL.rstrip("/"),
+            api_key=HF_TOKEN,
+            timeout=MODEL_TIMEOUT_SECONDS,
+            max_retries=0,
+        )
         self.session = requests.Session()
         self.env_base_url = ENV_BASE_URL.rstrip("/")
         self.model_name = MODEL_NAME
+        self.model_available = True
 
     def run(self) -> list[dict[str, Any]]:
+        print(
+            f"[START] task=all model={MODEL_NAME} max_steps={MAX_STEPS}",
+            flush=True,
+        )
         tasks = self.session.get(f"{self.env_base_url}/tasks", timeout=30).json()["tasks"]
         results: list[dict[str, Any]] = []
         for task in tasks:
             results.append(self._run_task(task["id"], task["name"]))
+        total_score = sum(float(result["score"]) for result in results) / max(
+            len(results), 1
+        )
+        total_steps = sum(int(result["steps"]) for result in results)
+        print(
+            f"[END] task=all score={total_score:.4f} steps={total_steps}",
+            flush=True,
+        )
         return results
 
     def _run_task(self, task_id: str, task_name: str) -> dict[str, Any]:
@@ -79,11 +98,12 @@ class InferenceRunner:
             steps += 1
             reward = float(step_payload["reward"])
             valid_action = bool(step_payload["info"].get("valid_action", True))
+            action_type = getattr(action.action_type, "value", str(action.action_type))
             print(
                 "[STEP] "
                 f"task={task_id} "
                 f"step={steps} "
-                f"action_type={action.action_type} "
+                f"action_type={action_type} "
                 f"order_id={action.order_id or 'null'} "
                 f"worker_id={action.worker_id or 'null'} "
                 f"reward={reward:.4f} "
@@ -117,6 +137,7 @@ class InferenceRunner:
             "task_id": task_id,
             "task_name": task_name,
             "score": result["score"],
+            "steps": steps,
             "delivered_orders": result["delivered_orders"],
             "delivered_on_time": result["delivered_on_time"],
             "total_distance_traveled": result["total_distance_traveled"],
@@ -125,6 +146,8 @@ class InferenceRunner:
 
     def _next_decision(self, observation: DeliveryObservation) -> BaselineDecision:
         prompt = build_dispatch_prompt(observation)
+        if not self.model_available:
+            return heuristic_decision(observation)
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -147,12 +170,21 @@ class InferenceRunner:
             payload = json.loads(content)
             return BaselineDecision.model_validate(payload)
         except Exception:
+            self.model_available = False
             return heuristic_decision(observation)
 
 
 def main() -> None:
-    runner = InferenceRunner()
-    runner.run()
+    try:
+        runner = InferenceRunner()
+        runner.run()
+    except Exception as exc:
+        print(f"[START] task=error", flush=True)
+        print(
+            f"[STEP] task=error step=1 reward=0.0000 error={type(exc).__name__}",
+            flush=True,
+        )
+        print(f"[END] task=error score=0.0000 steps=1", flush=True)
 
 
 if __name__ == "__main__":
