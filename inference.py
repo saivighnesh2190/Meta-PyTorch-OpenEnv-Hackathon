@@ -49,8 +49,8 @@ class InferenceRunner:
         results: list[dict[str, Any]] = []
         for task in tasks:
             results.append(self._run_task(task["id"], task["name"]))
-        total_score = sum(float(result["score"]) for result in results) / max(
-            len(results), 1
+        total_score = _strict_unit_float(
+            sum(float(result["score"]) for result in results) / max(len(results), 1)
         )
         total_steps = sum(int(result["steps"]) for result in results)
         print(
@@ -102,7 +102,7 @@ class InferenceRunner:
             actions.append(action)
             done = bool(step_payload["done"])
             steps += 1
-            reward = float(step_payload["reward"])
+            reward = _strict_unit_float(float(step_payload["reward"]))
             valid_action = bool(step_payload["info"].get("valid_action", True))
             action_type = getattr(action.action_type, "value", str(action.action_type))
             print(
@@ -132,7 +132,7 @@ class InferenceRunner:
             "[END] "
             f"task={task_id} "
             f"task_name={task_label} "
-            f"score={float(result['score']):.4f} "
+            f"score={_strict_unit_float(float(result['score'])):.4f} "
             f"steps={steps} "
             f"delivered_orders={result['delivered_orders']} "
             f"delivered_on_time={result['delivered_on_time']} "
@@ -191,6 +191,10 @@ def main() -> None:
             flush=True,
         )
         print(f"[END] task=error score=0.0001 steps=1", flush=True)
+
+
+def _strict_unit_float(value: float) -> float:
+    return round(max(0.0001, min(0.9999, value)), 4)
 
 
 if __name__ == "__main__":
